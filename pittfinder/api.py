@@ -1,22 +1,32 @@
 """Low-level API functions."""
 
-import requests
 import pathlib
 
+import requests
 from selectolax.parser import HTMLParser
 
 # ERRORS
+
 
 class APIError(BaseException):
     """Indicates that the API rejected a query."""
 
 
 class TooManyResultsError(APIError):
-    """Too many people matched your criteria. Please try searching by username, phone, email, or by enclosing your search in quotation marks."""
+    """Too many people matched your criteria.
+    Please try searching by username, phone, email, or by enclosing your search in quotation marks.
+    """
 
 
 class AtSearchLimitError(APIError):
-    """You have reached the search limit allowed. To continue, please wait 10 minutes or connect to the Pitt Network."""
+    """You have reached the search limit allowed.
+    To continue, please wait 10 minutes or connect to the Pitt Network.
+    """
+
+
+class ResponseParseError(BaseException):
+    """Error processing returned HTML response."""
+
 
 # CONSTANTS
 
@@ -30,6 +40,7 @@ SESSION = requests.session()
 
 # LIBRARY
 
+
 def get_search_response(query: str):
     """Performs the actual POST request and returns the raw response. Useful for debugging.
 
@@ -39,18 +50,22 @@ def get_search_response(query: str):
     Returns:
         _type_: _description_
     """
-    return SESSION.post(SEARCH_ENDPOINT, data={"search": query, "layout": "list"}, timeout=TIMEOUT)
+    return SESSION.post(
+        SEARCH_ENDPOINT, data={"search": query, "layout": "list"}, timeout=TIMEOUT
+    )
 
 
 def validate_search_response(html: str):
-    """Validates a search response because the API returns errors in the HTML and not as HTTP status codes
+    """Validates a search response
+
+    The API returns errors as HTML and not as HTTP status codes.
 
     Args:
         html (str): The search response to validate
 
     Raises:
-        TooManyResultsError: Too many people matched your criteria. Please try searching by username, phone, email, or by enclosing your search in quotation marks.
-        AtSearchLimitError: You have reached the search limit allowed.  To continue, please wait 10 minutes or connect to the Pitt Network.
+        TooManyResultsError: Too many people matched your criteria.
+        AtSearchLimitError: You have reached the search limit allowed.
     """
     root = HTMLParser(html)
     # Check response for "too many search results" error
@@ -75,21 +90,26 @@ def parse_search_response(html: str):
     root = HTMLParser(html)
     users = []
     for tree in root.css("section.row div.col"):
-        user_dict = {}
+        user_dict: dict[str, str | list[str]] = {}
         # Most attributes can be scraped as key-value pairs
         for node in tree.css("div:not(:first-child)"):
             # Skip the more-info-link if encountered
             if node.attributes.get("class", "") == "more-info-link":
                 continue
-            k = node.css_first("span:first-child").text(strip=True)
-            v = node.css_first("span:nth-of-type(2)").text(strip=True)
+            key = node.css_first("span:first-child").text(strip=True)
+            val = node.css_first("span:nth-of-type(2)").text(strip=True)
             # The html for this key isn't properly nested, so fix that
-            if k == "Student Plan(s)":
-                v = [v]
-            if not k:
-                user_dict["Student Plan(s)"].append(v)
+            if key:
+                if key == "Student Plan(s)":
+                    user_dict["Student Plan(s)"] = [val]
+                else:
+                    user_dict[key] = val
             else:
-                user_dict[k] = v
+                # Append to list instead of overwriting
+                plans = user_dict["Student Plan(s)"]
+                if isinstance(plans, str):
+                    raise ResponseParseError()
+                plans.append(val)
         # Hardcoded positions for these attributes
         user_dict["Name"] = tree.css_first(".person-header .title").text(strip=True)
         user_dict["Vcard ID"] = pathlib.PurePath(tree.css_first(".title .v-card").attributes["href"]).stem  # type: ignore
