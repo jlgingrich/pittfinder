@@ -1,8 +1,11 @@
+"""Low-level API functions."""
+
 import requests
 import pathlib
 
 from selectolax.parser import HTMLParser
 
+# ERRORS
 
 class APIError(BaseException):
     """Indicates that the API rejected a query."""
@@ -15,15 +18,18 @@ class TooManyResultsError(APIError):
 class AtSearchLimitError(APIError):
     """You have reached the search limit allowed. To continue, please wait 10 minutes or connect to the Pitt Network."""
 
+# CONSTANTS
 
 DOMAIN = "https://find.pitt.edu"
 SEARCH_ENDPOINT = DOMAIN + "/Search"
 VCARD_ENDPOINT = DOMAIN + "/VCard/Index/{vcard_id}"
 
+TIMEOUT = 5
+
 SESSION = requests.session()
 
+# LIBRARY
 
-# Low-level API
 def get_search_response(query: str):
     """Performs the actual POST request and returns the raw response. Useful for debugging.
 
@@ -33,7 +39,7 @@ def get_search_response(query: str):
     Returns:
         _type_: _description_
     """
-    return SESSION.post(SEARCH_ENDPOINT, data={"search": query, "layout": "list"})
+    return SESSION.post(SEARCH_ENDPOINT, data={"search": query, "layout": "list"}, timeout=TIMEOUT)
 
 
 def validate_search_response(html: str):
@@ -100,4 +106,4 @@ def get_vcard_for_user(vcard_id: str):
     Returns:
         str: The content of the VCARD
     """
-    return SESSION.get(VCARD_ENDPOINT.format(vcard_id=vcard_id)).text
+    return SESSION.get(VCARD_ENDPOINT.format(vcard_id=vcard_id), timeout=TIMEOUT).text
