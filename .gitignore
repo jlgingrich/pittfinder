@@ -3,5 +3,4 @@
 /data
 *.json
 *.vcard
-__pycache__
-.mypy_cache
+*cache*
