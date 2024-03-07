@@ -14,7 +14,7 @@ def download_raw_query_response(query: str):
         query (str): The query to return the response for
     """
     pathlib.Path(query.replace(" ", "_")).with_suffix(".html").write_text(
-        get_search_response(query).text
+        get_search_response(query).text, encoding="utf-16"
     )
 
 
@@ -25,7 +25,7 @@ def download_query_response(query: str):
         query (str): The query to return responses for
     """
     pathlib.Path(query.replace(" ", "_")).with_suffix(".json").write_text(
-        json.dumps(search(query), indent=4, sort_keys=True)
+        json.dumps(search(query), indent=4, sort_keys=True), encoding="utf-16"
     )
 
 
@@ -37,5 +37,5 @@ def download_vcard(user_id: str, filepath: str = ""):
         filepath (str | None, optional): The filepath to save the VCARD file to. Defaults to the ID.
     """
     pathlib.Path(filepath if filepath else user_id).with_suffix(".vcard").write_text(
-        get_vcard_for_user(user_id)
+        get_vcard_for_user(user_id), encoding="utf-16"
     )
