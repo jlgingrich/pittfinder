@@ -26,10 +26,10 @@ repos:
         entry: poetry run mypy
         language: system
         files: \.py$
-# -   repo: https://github.com/PyCQA/isort
-#     rev: 5.13.2
-#     hooks:
-#     -   id: isort
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+    -   id: isort
 -   repo: https://github.com/psf/black
     rev: 24.2.0
     hooks:
