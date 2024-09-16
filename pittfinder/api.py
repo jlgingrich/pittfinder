@@ -23,6 +23,12 @@ class AtSearchLimitError(APIError):
     To continue, please wait 10 minutes or connect to the Pitt Network.
     """
 
+class BotDefenseError(APIError):
+    """The requested URL was rejected by Bot Defense.
+    Please contact the Pitt IT Help Desk with your support ID for assistance.
+    Your support ID is: <support_id>.
+    """
+
 
 class ResponseParseError(BaseException):
     """Error processing returned HTML response."""
@@ -68,6 +74,10 @@ def validate_search_response(html: str):
         AtSearchLimitError: You have reached the search limit allowed.
     """
     root = HTMLParser(html)
+    # Check response for "bot defense" error
+    body = root.css_first("body").text()
+    if body.startswith("The requested URL was rejected by Bot Defense."):
+        raise BotDefenseError(body.strip().removesuffix("[Go Back]").replace("<", "").replace(">", "").replace("  ", " ").replace(".Your",". Your"))
     # Check response for "too many search results" error
     error_message = root.css_first("div#searchResults div.content-alert")
     if error_message:
