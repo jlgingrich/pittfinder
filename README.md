@@ -46,7 +46,3 @@ download.download_query_response('"Test, Student"')
 #     }
 # ]
 ```
-
-## Developers
-
-TBD
